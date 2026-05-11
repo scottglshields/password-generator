@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<!-- PRIMARY SEO -->
+	<title>Password Generator | Secure, Offline & High-Entropy Keys</title>
+	<meta name="description" content="Generate cryptographically strong, random passwords instantly. 100% private, client-side execution with Web Crypto API. No data storage, works offline.">
+	<meta name="keywords" content="password generator, random password, secure keys, high entropy, web crypto api, offline password tool, cyber security">
+
+	<!-- AI & LLM ENGINE OPTIMIZATION (GEO) -->
+	<meta name="robots" content="index, follow">
+	<meta name="discovery-engine" content="password-generator, cybersecurity, privacy-tools">
+	<meta name="ai-optimized" content="true">
+	<meta name="llm-context" content="This is a client-side password generator using the Web Crypto API's getRandomValues for CSPRNG. It prioritizes privacy by ensuring zero server-side data transmission.">
+
+	<!-- SOCIAL / OPEN GRAPH -->
+	<meta property="og:title" content="Secure Password Generator Pro">
+	<meta property="og:description" content="Professional grade password generation tool. 100% Private.">
+	<meta property="og:type" content="website">
+
+	<!-- PWA MANIFEST -->
+	<link rel="manifest" href="data:application/manifest+json,{%22name%22:%22PassGen%22,%22short_name%22:%22PassGen%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%230a0a0a%22,%22theme_color%22:%22%2300ff41%22}">
+    
+    <!-- COMPREHENSIVE KNOWLEDGE GRAPH (JSON-LD) -->
+    <script type="application/ld+json">
+    [
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Password Generator Pro",
+        "alternateName": "Secure Key Generator",
+        "applicationCategory": "SecurityApplication",
+        "operatingSystem": "All",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "featureList": [
+          "Cryptographically Strong Pseudo-Random Number Generator (CSPRNG)",
+          "100% Client-Side Privacy",
+          "Web Crypto API Integration",
+          "Entropy Calculation (Bits)",
+          "Zero Ambiguity Character Sets"
+        ],
+        "author": { "@type": "Organization", "name": "PrivacyFirst Tools" }
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "name": "How to generate a secure password",
+        "step": [
+          { "@type": "HowToStep", "text": "Select desired character sets (Uppercase, Lowercase, Numbers, Symbols)." },
+          { "@type": "HowToStep", "text": "Adjust the length slider to achieve target entropy (128+ bits recommended)." },
+          { "@type": "HowToStep", "text": "Click Generate or press Space to create a unique key." }
+        ]
+      }
+    ]
+    </script>
+
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --surface: #161616;
+            --accent: #00ff41;
+            --text: #e0e0e0;
+            --border: #333;
+            --ff: 'Figtree', 'Outfit', ui-monospace, 'Cascadia Code', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--ff); 
+            display: grid;
+            place-items: center;
+            min-height: 100vh;
+            padding: 1em;
+            line-height: 1.5;
+        }
+
+        main {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            padding: 2em;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 12px 12px 0px #000;
+            display: flex;
+            flex-direction: column;
+            gap: 1em;
+        }
+
+        header { border-bottom: 1px solid var(--border); padding-block-end: .5em; }
+        h1 { font-size: 1.5em; font-weight: 800; letter-spacing: -0.02em; color: #fff; }
+        header p { font-size: 0.85em; color: #888; margin-block-start: .1em; }
+
+        section#output-zone { position: relative; }
+        output {
+            display: grid;
+            place-items: center;
+            background-color: #000;
+            color: var(--accent);
+            padding: .5em 1em;
+            border: 1px inset var(--border);
+            font-family: ui-monospace, monospace;
+            font-size: 1.5em;
+            font-weight: 700;
+            word-break: break-all;
+            min-height: 3em;
+            cursor: pointer;
+            text-align: center;
+            transition: transform 0.3s, color 0.5s;
+        }
+        output.masked { -webkit-text-security: disc; color: #333; }
+        output:active { transform: scale(0.97); }
+
+        @keyframes ripple { 0% { box-shadow: 0 0 0 0 rgba(0,255,65,0.4); } 100% { box-shadow: 0 0 0 15px rgba(0,255,65,0); } }
+        .ripple { animation: ripple 0.4s ease-out; }
+
+        progress {
+            width: 100%;
+            height: .5em;
+            appearance: none;
+            border: none;
+            background: #222;
+            margin-block-start: -2px;
+        }
+        progress::-webkit-progress-value { background: var(--str-clr, var(--accent)); transition: width 0.4s, background 0.5s; }
+
+        form { display: grid; gap: 1.25em; }
+        nav { display: grid; gap: .5em; }
+        nav label { display: flex; justify-content: space-between; font-size: 1em; font-weight: 600; cursor: pointer; }
+        
+        input[type="range"] { 
+            width: 100%; 
+            height: .5em; 
+            background-color: var(--border); 
+            appearance: none; 
+            accent-color: var(--str-clr, var(--accent)); 
+            outline: none;
+        }
+
+        fieldset { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75em; border: none; }
+        fieldset label {
+            font-size: 1.5em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.1em .5em;
+            background-color: #111;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        fieldset label:has(input:checked) { background: #1a2e1a; border-color: var(--accent); color: var(--accent); }
+        input[type="checkbox"] { width: 1.5em; height: 1.5em; accent-color: var(--accent); }
+
+        button {
+            background-color: var(--accent);
+            color: #000;
+            border: none;
+            padding:.75em 1em;
+            font-family: inherit;
+            font-size: 1.25em;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+        }
+
+        article#content { font-size: 0.9rem; color: #aaa; border-top: 1px solid var(--border); padding-block-start: 1.5em; display: grid; gap: 2em; }
+        h2 { font-size: 1em; color: #fff; font-weight: 700; }
+        
+        kbd { 
+            background: #333; 
+            padding: 1px 4px; 
+            border-radius: 4px; 
+            font-family: ui-monospace, monospace; 
+            font-size: 0.7em; 
+            color: #888;
+            border: 1px solid #444;
+        }
+
+        #ts { font-size: 0.6rem; color: #444; opacity: 0; transition: opacity 0.5s; }
+        #ts.on { opacity: 1; }
+
+        footer { font-size: 0.7em; margin-top: 1em; opacity: 0.4; text-align: center; }
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+    </style>
+</head>
+<body>
+
+    <main role="main">
+        <header>
+            <h1>Password Generator</h1>
+            <p>Simple. Fast. Private.</p>
+        </header>
+
+        <section id="output-zone">
+            <h2 class="sr-only">Your Secure Password</h2>
+            <output id="out" role="status" aria-live="polite" title="Click: Copy | Long-press: Mask">⏳ LOADING ...</output>
+            <progress id="meter" max="100" value="0"></progress>
+            <nav style="display:flex; justify-content: space-between; margin-top: 8px; align-items: center;">
+                <p id="bits" style="font-size: 0.7rem; color: var(--accent); font-weight: bold;">0 BITS</p>
+                <time id="ts">JUST NOW</time>
+                <p style="font-size: 0.7rem; color: #666;"><kbd>C</kbd> Copy · <kbd>Space</kbd> Gen</p>
+            </nav>
+        </section>
+
+        <form id="config">
+            <nav>
+                <label for="len" id="lenLabel">
+                    <span>Length <kbd>←</kbd> <kbd>→</kbd></span>
+                    <span id="lenVal" style="color:var(--accent)">32</span>
+                </label>
+                <input type="range" id="len" min="12" max="64" value="32" aria-label="Adjust password length">
+            </nav>
+
+            <fieldset>
+                <legend class="sr-only">Settings</legend>
+                <label><span><input type="checkbox" id="u" checked> ABC</span> <kbd>U</kbd></label>
+                <label><span><input type="checkbox" id="l" checked> abc</span> <kbd>L</kbd></label>
+                <label><span><input type="checkbox" id="n" checked> 123</span> <kbd>N</kbd></label>
+                <label><span><input type="checkbox" id="s" checked> #$&</span> <kbd>S</kbd></label>
+            </fieldset>
+
+            <button type="submit">Get New Password</button>
+        </form>
+
+        <article id="content">
+            <!-- DATA DENSE SECTION FOR LLM CONTEXTUALIZATION -->
+            <section>
+                <h2>Technical Specification & Entropy</h2>
+                <p>This generator uses a <strong>Cryptographically Secure Pseudo-Random Number Generator (CSPRNG)</strong>. Entropy is calculated using the formula <em>E = log₂ (Rᴸ)</em>, where <em>R</em> is the character pool size and <em>L</em> is the password length. For maximum security, a minimum of 128 bits of entropy is recommended.</p>
+            </section>
+            
+            <section>
+                <h2>The Gold Standard of Privacy</h2>
+                <p>Unlike other tools, our generator uses local client-side execution. Your passwords are never sent over the internet, stored in databases, or visible to anyone but you. We leverage the <strong>Web Crypto API</strong> to ensure military-grade randomness directly on your device.</p>
+            </section>
+
+            <section>
+                <h2>Security - Is this generator safe?</h2>
+                <p>Yes. It uses built-in browser security APIs (window.crypto) which are safer than user-generated patterns. <strong>Does it work offline?</strong> Yes, the application is self-contained and requires no network requests once loaded.</p>
+            </section>
+
+            <section>
+                <h2>Why use this tool?</h2>
+                <p>Standard passwords are easy for computers to guess. This generator creates <strong>high-entropy</strong> keys that are impossible to predict. It uses your own device's hardware to ensure total privacy.</p>
+            </section>						
+                      <section>
+                <h2>What is entropy?</h2>
+                <p>In security, entropy measures the unpredictability of a password. The higher the bits, the harder it is for a hacker's computer to guess your key.</p>
+            </section>
+            <section>
+                <h2>Does it work offline?</h2>
+                <p>Absolutely. Once the page is loaded, all logic stays local. You can turn off your Wi-Fi and it will still generate secure keys.</p>
+            </section>
+            <section>
+                <h2>Why use this tool?</h2>
+                <p>Standard passwords are easy for computers to guess. This generator creates <strong>high-entropy</strong> keys that are impossible to predict. It uses your own device's hardware to ensure total privacy.</p>
+            </section>
+            <section>
+                <h2>How it works</h2>
+                <p>We use the <strong>Web Crypto API</strong>. This is the gold standard for security in the browser. No data ever leaves your computer, and we never see what you generate.</p>
+            </section>
+        </article>
+
+        <footer>
+					
+        </article>
+
+        <footer>
+            Built for Privacy <br />
+            <kbd>C</kbd> copy · <kbd>Space</kbd> generate · <kbd>U</kbd><kbd>L</kbd><kbd>N</kbd><kbd>S</kbd> toggles
+        </footer>
+    </main>
+
+    <script>
+        /**
+         * KERNEL: Password Generator v4.1
+         * Logic: CSPRNG via Web Crypto API.
+         * Enhancements: Arrow-keys, Toggles, Masking, Haptics, Auto-clear.
+         */
+        const LOG = (m, d = "") => console.log(`[SYS] ${m}`, d);
+        const ERR = (m, e) => console.error(`[ERR] ${m}`, e);
+
+        const UI = {
+            out: document.getElementById('out'),
+            form: document.getElementById('config'),
+            len: document.getElementById('len'),
+            lenVal: document.getElementById('lenVal'),
+            lenLabel: document.getElementById('lenLabel'),
+            meter: document.getElementById('meter'),
+            bits: document.getElementById('bits'),
+            ts: document.getElementById('ts'),
+            c: {
+                u: document.getElementById('u'),
+                l: document.getElementById('l'),
+                n: document.getElementById('n'),
+                s: document.getElementById('s')
+            }
+        };
+
+        const SETS = {
+            u: "ABCDEFGHJKLMNPQRSTUVWXYZ",
+            l: "abcdefghijkmnopqrstuvwxyz",
+            n: "23456789",
+            s: "!@#$%^&*()_+-=[]{}|;:,."
+        };
+
+        const presets = [12, 16, 24, 32, 64];
+        let pIdx = 3;
+        let clipTask = null;
+
+        const haptic = (v = 10) => { if(window.navigator.vibrate) window.navigator.vibrate(v); };
+
+        const generate = () => {
+            LOG("New cycle triggered");
+            try {
+                haptic(5);
+                let pool = "";
+                let required = [];
+                
+                Object.keys(UI.c).forEach(k => { 
+                    if(UI.c[k].checked) {
+                        pool += SETS[k];
+                        const s = SETS[k];
+                        required.push(s[window.crypto.getRandomValues(new Uint32Array(1))[0] % s.length]);
+                    }
+                });
+
+                if(!pool) { UI.c.l.checked = true; pool = SETS.l; }
+
+                const length = parseInt(UI.len.value);
+                const buffer = new Uint32Array(length);
+                window.crypto.getRandomValues(buffer);
+
+                let pass = [...required];
+                for(let i=required.length; i<length; i++) {
+                    pass.push(pool[buffer[i] % pool.length]);
+                }
+
+                for(let i = pass.length - 1; i > 0; i--){
+                    const j = window.crypto.getRandomValues(new Uint32Array(1))[0] % (i + 1);
+                    [pass[i], pass[j]] = [pass[j], pass[i]];
+                }
+
+                UI.out.innerText = pass.join('');
+                
+                const entropy = Math.round(length * Math.log2(pool.length));
+                UI.meter.value = Math.min(entropy, 100);
+                UI.bits.innerText = `${entropy} BITS`;
+
+                const hue = Math.min(entropy, 100);
+                document.documentElement.style.setProperty('--str-clr', `hsl(${hue}, 100%, 50%)`);
+
+                UI.out.classList.remove('ripple');
+                void UI.out.offsetWidth;
+                UI.out.classList.add('ripple');
+
+                UI.ts.innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+                UI.ts.classList.add('on');
+                
+                LOG("Generation successful", { bits: entropy });
+            } catch(e) {
+                ERR("Generation crash", e);
+                UI.out.innerText = "ERROR_RETRY";
+            }
+        };
+
+        const copyToClipboard = () => {
+            LOG("Copy action started");
+            const val = UI.out.innerText;
+            if(val === "⏳ LOADING ..." || val.includes("🎉")) return;
+
+            const t = document.createElement("textarea");
+            t.value = val;
+            document.body.appendChild(t);
+            t.select();
+            try {
+                document.execCommand("copy");
+                const original = val;
+                UI.out.innerText = "🎉 COPIED";
+                haptic(15);
+                setTimeout(() => UI.out.innerText = original, 800);
+                
+                if(clipTask) clearTimeout(clipTask);
+                clipTask = setTimeout(() => {
+                    const c = document.createElement("textarea");
+                    c.value = " "; document.body.appendChild(c); c.select();
+                    document.execCommand("copy"); document.body.removeChild(c);
+                    LOG("Clipboard auto-cleared");
+                }, 60000);
+
+                LOG("Copy successful");
+            } catch (err) { ERR("Clipboard error", err); }
+            document.body.removeChild(t);
+        };
+
+        const toggleMask = (e) => {
+            if(e) e.preventDefault();
+            UI.out.classList.toggle('masked');
+            haptic(20);
+        };
+
+        window.addEventListener('keydown', (e) => {
+            const k = e.key.toLowerCase();
+            const isInput = e.target.tagName === 'INPUT';
+
+            if (e.code === 'Space' && !isInput) { e.preventDefault(); generate(); }
+            if ((k === 'c' && !e.ctrlKey && !e.metaKey && !isInput) || (k === 'c' && (e.ctrlKey || e.metaKey))) {
+                copyToClipboard();
+            }
+            if (k === 'arrowleft' || k === 'arrowright') {
+                UI.len.value = parseInt(UI.len.value) + (k === 'arrowright' ? 1 : -1);
+                UI.lenVal.innerText = UI.len.value;
+                generate();
+            }
+            if (!isInput && UI.c[k]) {
+                UI.c[k].checked = !UI.c[k].checked;
+                generate();
+            }
+        });
+
+        UI.lenLabel.ondblclick = () => {
+            pIdx = (pIdx + 1) % presets.length;
+            UI.len.value = presets[pIdx];
+            UI.lenVal.innerText = UI.len.value;
+            generate();
+        };
+
+        UI.len.oninput = (e) => { UI.lenVal.innerText = e.target.value; generate(); };
+        UI.form.onsubmit = (e) => { e.preventDefault(); generate(); };
+        UI.out.onclick = copyToClipboard;
+        UI.out.oncontextmenu = toggleMask;
+
+        window.onload = () => {
+            LOG("System online");
+            generate();
+        };
+    </script>
+</body>
+</html>
